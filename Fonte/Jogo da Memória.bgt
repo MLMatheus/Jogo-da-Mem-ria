@@ -1,0 +1,244 @@
+#include "sound_pool.bgt";
+
+sound_pool som;
+string[][] tabuleiro;
+string[][] tabuleiro_2;
+int[] baralho = {1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8, 8};
+int[] baralho2(16);
+int lin = 0, col = 0;
+
+void main() {
+tabuleiro.resize(4);
+tabuleiro_2.resize(4);
+
+for(int i = 0; i < 4; i++) {
+tabuleiro[i].resize(4);
+tabuleiro_2[i].resize(4);
+}
+
+show_game_window("Jogo da Memória - Versão 1.0");
+menu();
+}
+
+void jogar() {
+int lin2 = 0, col2 = 0, contador = 0, tentativas = 0;;
+lin = 0;
+col = 0;
+timer tempo;
+sound s;
+sound t;
+s.load("inicio_partida.ogg");
+t.load("folear.wav");
+s.play_wait();
+t.play();
+
+while(t.playing) {
+if(key_pressed(KEY_RETURN)) break;
+wait(5);
+}
+t.stop();
+
+preenche_tabuleiro();
+mostrar_tabuleiro();
+tempo.restart();
+lin = 0;
+col = 0;
+som.play_stationary("valendo.wav", false);
+
+while(true) {
+if(key_pressed(KEY_ESCAPE)) menu();
+
+if(key_pressed(KEY_RIGHT)) direita(tabuleiro_2);
+if(key_pressed(KEY_LEFT)) esquerda(tabuleiro_2);
+if(key_pressed(KEY_UP)) cima(tabuleiro_2);
+if(key_pressed(KEY_DOWN)) baixo(tabuleiro_2);
+
+if(key_pressed(KEY_RETURN)) {
+if(tabuleiro_2[lin][col] != "0") som.play_stationary("ocupado.ogg", false);
+if(tabuleiro_2[lin][col] == "0" && contador == 0) {
+tabuleiro_2[lin][col] = tabuleiro[lin][col];
+lin2 = lin;
+col2 = col;
+contador++;
+som.play_stationary(tabuleiro[lin][col]+".wav", false);
+}
+else if(contador == 1 && tabuleiro_2[lin][col] == "0") {
+if(tabuleiro[lin][col] == tabuleiro_2[lin2][col2]) {
+tabuleiro_2[lin][col] = tabuleiro[lin][col];
+contador = 0;
+som.play_stationary(tabuleiro[lin][col]+".wav", false);
+som.play_stationary("acertou.ogg", false);
+if(verifica_vitoria()) vitoria(tempo.elapsed, tentativas);
+}
+else {
+contador = 0;
+tabuleiro_2[lin2][col2] = "0";
+som.play_stationary(tabuleiro[lin][col]+".wav", false);
+som.play_stationary("errou.ogg", false);
+tentativas++;
+}
+}
+}
+wait(5);
+}
+}
+
+void preenche_tabuleiro() {
+int contador = 0, d = 0;
+
+for(int i = 0; i < 4; i++) {
+for(int j = 0; j < 4; j++) {
+tabuleiro_2[i][j] = "0";
+tabuleiro[i][j] = "";
+}
+}
+
+for(int i = 0; i < 16; i++) {
+baralho2[i] = -1;
+}
+
+for(int i = 0; i<4; i++) {
+for(int j = 0; j < 4; j++) {
+d = random(0, 15);
+while(true) {
+if(pesquisar_valores(d)) {
+tabuleiro[i][j] = baralho[d];
+baralho2[contador] = d;
+break;
+}
+d = random(0, 15);
+}
+contador++;
+}
+}
+}
+
+bool pesquisar_valores(int pesquisar) {
+for(int i = 0; i < 16; i++) {
+if(baralho2[i] == pesquisar) {
+return false;
+}
+}
+return true;
+}
+
+void direita(string[][] matriz) {
+col++;
+if (col > 3) {
+col = 3;
+som.play_stationary("limite.ogg", false);
+}
+else som.play_stationary(matriz[lin][col]+".wav", false);
+}
+
+void esquerda(string[][] matriz) {
+col--;
+if (col < 0) {
+col = 0;
+som.play_stationary("limite.ogg", false);
+}
+else som.play_stationary(matriz[lin][col]+".wav", false);
+}
+
+void baixo(string[][] matriz) {
+lin++;
+if (lin > 3) {
+lin = 3;
+som.play_stationary("limite.ogg", false);
+}
+else som.play_stationary(matriz[lin][col]+".wav", false);
+}
+
+void cima(string[][] matriz) {
+lin--;
+if (lin < 0) {
+lin = 0;
+som.play_stationary("limite.ogg", false);
+}
+else som.play_stationary(matriz[lin][col]+".wav", false);
+}
+
+void mostrar_tabuleiro() {
+timer tempo;
+
+while(tempo.elapsed <= 10000) {
+if(key_pressed(KEY_F4)) exit();
+
+if(key_pressed(KEY_RIGHT)) direita(tabuleiro);
+if(key_pressed(KEY_LEFT)) esquerda(tabuleiro);
+if(key_pressed(KEY_UP)) cima(tabuleiro);
+if(key_pressed(KEY_DOWN)) baixo(tabuleiro);
+wait(5);
+}
+}
+
+bool verifica_vitoria() {
+int contador = 0;
+
+for(int i = 0; i < 4; i++) {
+for(int j = 0; j < 4; j++) {
+if(tabuleiro_2[i][j] != 0) contador++;
+}
+}
+
+if(contador == 16) return true;
+else return false;
+}
+
+void vitoria(int tempo, int tentativas) {
+int minuto = 0, segundo = 0, contador = 0;
+som.play_stationary("vitoria.ogg", false);
+
+minuto = tempo / 1000 / 60;
+segundo = tempo / 1000 - (minuto * 60);
+
+alert("Fim do jogo!", "Seu tempo foi: " + minuto + " minutos e " + segundo + " segundos. Seu número de tentativas foi: " + tentativas);
+menu();
+}
+
+void menu() {
+int contador = 0;
+sound s;
+s.load("menu.ogg");
+s.play_looped();
+
+int s2 = -1;
+s2 = som.play_stationary("menu_principal.wav", false);
+while(true) {
+if(key_pressed(KEY_ESCAPE)) exit();
+
+if(key_pressed(KEY_DOWN)) {
+contador++;
+if(contador > 3) contador = 1;
+som.destroy_sound(s2);
+som.play_stationary("opcao"+contador+".wav", false);
+}
+
+if(key_pressed(KEY_UP)) {
+contador--;
+if(contador < 1) contador = 3;
+som.destroy_sound(s2);
+som.play_stationary("opcao"+contador+".wav", false);
+}
+if(key_pressed(KEY_RETURN)) {
+s.pause();
+if(contador == 1) jogar();
+if(contador == 2) instrucoes();
+if(contador == 3) exit();
+}
+wait(5);
+}
+}
+
+void instrucoes() {
+sound s;
+s.load("instrucoes.wav");
+s.play();
+
+while(s.playing) {
+if(key_pressed(KEY_RETURN)) break;
+wait(5);
+}
+s.stop();
+menu();
+}
